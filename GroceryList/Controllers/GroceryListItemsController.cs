@@ -14,14 +14,17 @@ public class GroceryListItemsController : ControllerBase
 
     // GET: api/GroceryListItem
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GroceryListItem>>> GetGroceryListItem()
+    public async Task<ActionResult<IEnumerable<GroceryListItemDTO>>> GetGroceryListItem()
     {
-        return await _context.GroceryList.ToListAsync();
+        
+        return await _context.GroceryList
+            .Select(x => GroceryListItemToDTO(x))
+            .ToListAsync();
     }
 
     // GET: api/GroceryListItem/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<GroceryListItem>> GetGroceryListItem(long id)
+    public async Task<ActionResult<GroceryListItemDTO>> GetGroceryListItem(long id)
     {
         var grocerylistitem = await _context.GroceryList.FindAsync(id);
 
@@ -30,20 +33,28 @@ public class GroceryListItemsController : ControllerBase
             return NotFound();
         }
 
-        return grocerylistitem;
+        return GroceryListItemToDTO(grocerylistitem);
     }
 
     // PUT: api/GroceryListItem/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutGroceryListItem(long? id, GroceryListItem grocerylistitem)
+    public async Task<IActionResult> PutGroceryListItem(long id, GroceryListItemDTO grocerylistitemDTO)
     {
-        if (id != grocerylistitem.Id)
+        if (id != grocerylistitemDTO.Id)
         {
             return BadRequest();
         }
 
-        _context.Entry(grocerylistitem).State = EntityState.Modified;
+        var groceryListItem = await _context.GroceryList.FindAsync(id);
+
+        if(groceryListItem == null)
+        {
+            return NotFound();
+        }
+
+        groceryListItem.Name = grocerylistitemDTO.Name;
+        groceryListItem.IsComplete = grocerylistitemDTO.IsComplete;
 
         try
         {
@@ -67,12 +78,20 @@ public class GroceryListItemsController : ControllerBase
     // POST: api/GroceryListItem
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<GroceryListItem>> PostGroceryListItem(GroceryListItem grocerylistitem)
+    public async Task<ActionResult<GroceryListItemDTO>> PostGroceryListItem(GroceryListItemDTO grocerylistitemDTO)
     {
-        _context.GroceryList.Add(grocerylistitem);
+        var groceryListItem = new GroceryListItem
+        {
+            IsComplete = grocerylistitemDTO.IsComplete,
+            Name = grocerylistitemDTO.Name,
+        };
+
+        _context.GroceryList.Add(groceryListItem);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction("GetGroceryListItem", new { id = grocerylistitem.Id }, grocerylistitem);
+        return CreatedAtAction("GetGroceryListItem",
+            new { id = groceryListItem.Id }, 
+            GroceryListItemToDTO(groceryListItem));
     }
 
     // DELETE: api/GroceryListItem/5
@@ -95,4 +114,14 @@ public class GroceryListItemsController : ControllerBase
     {
         return _context.GroceryList.Any(e => e.Id == id);
     }
+
+
+
+    private static GroceryListItemDTO GroceryListItemToDTO(GroceryListItem groceryListItem) =>
+     new GroceryListItemDTO
+     {
+         Id = groceryListItem.Id,
+         Name = groceryListItem.Name,
+         IsComplete = groceryListItem.IsComplete
+     };
 }
