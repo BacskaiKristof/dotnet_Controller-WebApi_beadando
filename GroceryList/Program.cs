@@ -2,6 +2,7 @@ using GroceryList.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("GroceryListContext") ?? throw new InvalidOperationException("Connection string 'GroceryListContext' not found.");
 
 
 
